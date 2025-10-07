@@ -7,9 +7,6 @@ wheels/
 *.egg-info
 .ruff_cache
 .cache
-pokemon copy.ipynb
-uv.lock
-pyproject.toml
 
 # Virtual environments
 .venv
