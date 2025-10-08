@@ -1,0 +1,15 @@
+[project]
+name = "projeto-3"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["pandas", "scikit-learn", "lightgbm", "lazypredict", "kagglehub", "taskipy", "ruff", "seaborn", "matplotlib-inline", "ipykernel", "ipywidgets", "boruta", "joblib"]
+
+[tool.taskipy.tasks]
+start = "python seu_projeto/main.py"
+lint = "ruff check ."
+test = "pytest"
+
+# Adicione qualquer comando que você usa repetidamente
+activate = ".venv/Scripts/activate" 

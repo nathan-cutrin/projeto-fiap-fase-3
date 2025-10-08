@@ -1,6 +1,19 @@
 import streamlit as st
 import requests
 import random
+import pandas as pd
+import joblib
+
+@st.cache_resource
+def load_model():
+    """Carrega o modelo de ML treinado a partir do arquivo."""
+    try:
+        model = joblib.load('modelo_lendario_final.joblib')
+        return model
+    except FileNotFoundError:
+        return None
+
+model = load_model()
 
 def draw_pokemon():
     # O maior ID de Pokémon atualmente é 721
@@ -26,9 +39,51 @@ def verify_if_is_legendary(pokemon_id):
     else:
         return None
 
-def model_predict(pokemon_id):
-    # Simulando que o modelo acha que IDs múltiplos de 100 são lendários
-    return pokemon_id in [144, 145, 146, 150, 151]
+@st.cache_resource
+def load_artifacts():
+    """
+    Carrega o modelo de ML treinado e o dataset local a partir dos arquivos.
+    """
+    try:
+        model = joblib.load('models/modelo_lendario_final.joblib')
+        
+        # Carrega e limpa o DataFrame da mesma forma que no treino
+        df = pd.read_csv("raw_data/Pokemon.csv")
+        df = df.rename(columns={'#': 'id', "Total": "total"})
+        df = df.drop_duplicates(subset=["id"])
+
+        return model, df
+    except FileNotFoundError:
+        return None, None
+
+def model_predict(ml_model, dataframe, pokemon_id):
+    """
+    Usa o modelo carregado para prever se um Pokémon é lendário,
+    buscando suas features no DataFrame local.
+    """
+    if ml_model is None or dataframe is None:
+        return None
+    
+    pokemon_features = dataframe[dataframe['id'] == pokemon_id]
+    
+    if pokemon_features.empty:
+        # Se o Pokémon sorteado não estiver no nosso CSV, não conseguimos prever
+        return None
+    
+    # Prepara os dados de entrada no formato que o modelo espera
+    # Usando apenas a feature 'total', como no seu script de treino final
+    features_para_prever = pokemon_features[['total']]
+    
+    # Faz a predição
+    prediction = ml_model.predict(features_para_prever)
+    
+    # Retorna o resultado (1 para Lendário, 0 para Comum)
+    return bool(prediction[0])
+
+model, df_pokemon_local = load_artifacts()
+
+if model is None or df_pokemon_local is None:
+    st.error("Arquivos necessários ('modelo_lendario_final.joblib' ou 'Pokemon.csv') não encontrados!")
 
 st.set_page_config(page_title="Pokémon Lendário?", layout="centered")
 st.title("🔮 É um Pokémon Lendário?")
@@ -69,7 +124,7 @@ with col_btn2:
 # Mostrar resultados
 if st.session_state.resposta_usuario is not None:
     resposta_real = verify_if_is_legendary(pokemon_id)
-    resposta_modelo = model_predict(pokemon_id)
+    resposta_modelo = model_predict(model, df_pokemon_local, pokemon_id)
 
     st.subheader("🔍 Resultados:")
     st.markdown(f"**Seu palpite:** {'Lendário' if st.session_state.resposta_usuario else 'Não Lendário'}")
